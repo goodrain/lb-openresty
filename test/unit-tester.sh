@@ -86,13 +86,13 @@ tester GET upstreams/$name
 
 tester POST "$json3" servers/$name
 tester UPDATE "$json4" servers/$name
-tester GET servers/$name
+tester GET servers/$name?protocol=http
 tester DELETE servers/$name?protocol=http
 
 
 tester POST "$json5" servers/$name
 tester UPDATE "$json6" servers/$name
-tester GET servers/$name
+tester GET servers/$name?protocol=tcp
 tester DELETE servers/$name?protocol=tcp
 
 

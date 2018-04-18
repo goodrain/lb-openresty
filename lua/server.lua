@@ -3,7 +3,19 @@
 local server_name = ngx.var.src_name
 
 local function GET()
-    local str = utils.exec(string.format("ls %s|grep -e '.conf$'|awk -F '.' '{print $1}'", dynamic_http_servers_dir))
+    local protocol = ngx.req.get_uri_args()["protocol"]
+    if protocol == nil or string.len(protocol) > 4 or string.match(protocol, "%a+") == nil then
+        ngx.status = HTTP_NOT_ALLOWED
+        ngx.print("The protocol parameter is incorrecat")
+        return
+    end
+    
+    local path = dynamic_stream_servers_dir
+    if protocol == "http" or protocol == "https" then
+        path = dynamic_http_servers_dir
+    end
+    
+    local str = utils.exec(string.format("ls %s|grep -e '.conf$'|awk -F '.' '{print $1}'", path))
     local arr = utils.split(str, "\n")
     local json = cjsonf.encode(arr)
 
@@ -93,7 +105,7 @@ local function DELETE()
     local protocol = ngx.req.get_uri_args()["protocol"]
     if protocol == nil or string.len(protocol) > 4 or string.match(protocol, "%a+") == nil then
         ngx.status = HTTP_NOT_ALLOWED
-        ngx.print("The parameter is incorrect")
+        ngx.print("The protocol parameter is incorrecat")
         return
     end
 
