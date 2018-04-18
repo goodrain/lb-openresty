@@ -1,20 +1,25 @@
 #!/bin/bash
 
-set -x
-cd ..
 
-docker build -t lb .
+# setup env
+tag=`grep '^version ' VERSION | awk '{print $2}'`
+name=rbd-loadbalancer
 
-[[ `docker ps -a | grep lb | wc -l | xargs -I C echo C` > 0 ]] && { docker stop lb; docker rm lb; }
+
+# build
+docker build -t $name . || { echo "failed!"; }
+
+
+# start
+[[ `docker ps -a | grep $name | wc -l | xargs -I C echo C` > 0 ]] && { docker stop $name; docker rm $name; }
 docker run \
---name lb \
+--name $name \
 -p 80:80 \
 -p 443:443 \
 -p 8081:8081 \
--p 8082:8082 \
 -v `pwd`/conf:/usr/local/openresty/nginx/conf \
 -v `pwd`/lua:/usr/local/openresty/nginx/lua \
--tid lb
-sleep 2 ;[[ `docker ps | grep lb | wc -l | xargs -I C echo C` < 1 ]] && { docker logs lb; docker rm lb; }
+-tid $name
+sleep 2 ;[[ `docker ps | grep $name | wc -l | xargs -I C echo C` < 1 ]] && { echo "failed!"; docker logs $name; docker rm $name; }
 
-docker exec -ti lb env COLUMNS=$COLUMNS LINES=$LINES TERM=$TERM bash
+docker exec -ti $name env COLUMNS=$COLUMNS LINES=$LINES TERM=$TERM bash

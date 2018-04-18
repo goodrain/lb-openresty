@@ -17,6 +17,5 @@ docker run \
 -p 80:80 \
 -p 443:443 \
 -p 8081:8081 \
--p 8082:8082 \
 -tid $name
 sleep 2 ;[[ `docker ps | grep $name | wc -l | xargs -I C echo C` < 1 ]] && { echo "failed!"; docker logs $name; docker rm $name; }

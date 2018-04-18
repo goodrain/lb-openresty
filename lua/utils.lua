@@ -3,6 +3,7 @@ local _M = {}
 -- 定义字段
 -- _M.cmd_restart_nginx = "kill -HUP `ps -ef|grep -e 'nginx: master'|grep -v grep|awk '{print $1}'|head -n 1`; echo $?"
 _M.cmd_restart_nginx = nginx_home .."/sbin/nginx -s reload; echo $?"
+_M.cmd_check_nginx = nginx_home .."/sbin/nginx -t; echo $?"
 
 
 -- 用指定的分割符sep切分字符串str，将结果封装到一个数组中并返回
@@ -17,7 +18,7 @@ function _M.split(str, sep)
 end
 
 
--- 执行指定命令，如果执行日志的最后一行不是预期的断言，则认为执行失败并返回错误信息
+-- 执行指定命令，如果执行日志的最后一行不是预期的断言则认为执行失败并返回错误信息，执行成功则返回nil
 function _M.shell(cmd, assert)
     local f = io.popen("{ " .. cmd .. "; }" .. " 2>&1")
     local log = f:read("*a")
@@ -42,7 +43,7 @@ function _M.shell(cmd, assert)
 end
 
 
--- 执行指定命令，返回最后一行
+-- 执行指定命令，返回标准输出
 function _M.exec(cmd)
     local f = io.popen(cmd)
     local log = f:read("*a")
@@ -55,6 +56,16 @@ end
 
 
 -- 备份与恢复
+function _M.file_is_exists(filename)
+    local r = _M.exec(string.format("ls %s|wc -l", filename))
+
+    if r == "0" then
+        return false
+    else
+        return true
+    end
+end
+
 function _M.file_backup(filename)
     _M.shell(string.format("/bin/cp -f %s %s.bak", filename, filename))
 end

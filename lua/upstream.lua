@@ -1,32 +1,24 @@
 --[[实现对upstream的操作，并写入配置文件，upstream与上层应用对应]]
 
-local upstream_name = ngx.var.upstream_name
+local upstream_name = ngx.var.src_name
 
 local function GET()
-    -- check exists of the upstream config file
-    local exists = utils.exec(string.format("ls %s|wc -l", dao.get_http_upstream_file(upstream_name)))
+    local str = utils.exec(string.format("ls %s|grep -e '.conf$'|xargs -I CC basename CC .conf", dynamic_upstreams_dir))
+    local arr = utils.split(str, "\n")
+    local json = cjsonf.encode(arr)
 
-    if exists ~= "1" then
-        ngx.status = 517
-        ngx.print("does not exist the upstream: "..upstream_name)
-        ngx.log(ngx.ERR, "does not exist the upstream: "..upstream_name)
-        return
-    end
-
-    -- get upstream already exists list by dyups api
-    local result = dao.http_upstream_read(upstream_name)
-    local json = cjsonf.encode(result)
-
-    -- 处理结果
     ngx.log(ngx.INFO, json)
+    ngx.status = HTTP_OK
     ngx.print(json)
+
 end
 
 -- 创建或更新指定upstream
-local function POST()
-    -- 获取请求体，数据格式：{"name": "80.service.ns.kube.local.", "servers": ["127.0.0.1:8088", "127.0.0.1:8089"]}
+local function UPDATE()
+    -- 获取请求体，数据格式：{"name": "80.service.ns.kube.local.", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
     ngx.req.read_body()
     local data_str = ngx.req.get_body_data()
+    ngx.log(ngx.INFO, "POST upstream ", ngx.req.get_body_data())
 
     -- 转为map形式
     local data_table = cjsonf.decode(data_str)
@@ -35,27 +27,37 @@ local function POST()
     -- 将server列表拼接为单行形式："server 127.0.0.1:8089;server 127.0.0.1:8088;"
     local servers_line = ""
     for _, item in pairs(data_table.servers) do
-        servers_line = servers_line .. "server " .. item .. ";"
+        servers_line =  string.format("%sserver %s;", servers_line, item.addr)
     end
 
-    -- 创建或更新指定upstream
+    -- 更新内存中的upstream
     local status, r = dyups.update(upstream_name, servers_line);
 
+    -- 更新持久层
+    local err = dao.upstream_save(data_table)
+
+    -- 合并日志信息
+    if err ~= nil then
+        r = string.format("%s; %s", r, err)
+    end
+
     -- 返回结果
-    if status == ngx.HTTP_OK then
+    if status == ngx.HTTP_OK and err == nil then
         ngx.log(ngx.INFO, r)
+        ngx.status = HTTP_OK
         ngx.print(r)
     else
         ngx.log(ngx.ERR, r)
         ngx.status = status
+        ngx.print(r)
+        -- 回退
+        --dao.upstream_delete(upstream_name)
     end
 
-    -- 更新持久层
-    dao.http_upstream_save(data_table)
 end
 
-local function UPDATE()
-    POST()
+local function POST()
+    UPDATE()
 end
 
 local function DELETE()
@@ -63,8 +65,9 @@ local function DELETE()
     local status, r = dyups.delete(upstream_name)
 
     -- 返回结果
-    if status == ngx.HTTP_OK then
+    if status == ngx.HTTP_OK or status == 404 then
         ngx.log(ngx.INFO, r)
+        ngx.status = HTTP_OK
         ngx.print(r)
     else
         ngx.log(ngx.ERR, r)
@@ -72,7 +75,7 @@ local function DELETE()
     end
 
     -- 更新持久层
-    dao.http_upstream_delete(upstream_name)
+    dao.upstream_delete(upstream_name)
 end
 
 
