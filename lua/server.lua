@@ -15,7 +15,8 @@ end
 -- 更新指定server
 local function UPDATE()
     -- 获取请求体，数据格式如下：
-    -- {"name": "8085.app1.ns.kube.local.", "domain": "8085.app1.ns.kube.local.", "port": 8085, "path": "/", "protocol": "https", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}
+    -- {"name": "voa1i9kc_gr9e98de_8088.Rule", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "5000.grb5060d.vzrd9po6"}
+    -- upstream字段是一个不带后缀的域名，在这里需要拼接为一个完整域名
     ngx.req.read_body()
     local data_str = ngx.req.get_body_data()
     ngx.log(ngx.INFO, "POST server ", ngx.req.get_body_data())
@@ -23,6 +24,7 @@ local function UPDATE()
     -- 转为map形式
     local data_table = cjsonf.decode(data_str)
     data_table.name = server_name
+    data_table.upstream = data_table.upstream .. "." .. http_suffix_url
 
     -- 保存证书
     if data_table.protocol == "https" then
@@ -63,7 +65,7 @@ local function UPDATE()
         if is_exists then
             utils.file_recover(filename)
         else
-            --dao.server_delete(server_name, data_table.protocol)//TODO
+            dao.server_delete(server_name, data_table.protocol)
         end
     else
         ngx.status = HTTP_OK

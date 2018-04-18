@@ -1,6 +1,6 @@
 --[[实现对upstream的操作，并写入配置文件，upstream与上层应用对应]]
 
-local upstream_name = ngx.var.src_name
+local upstream_name = ngx.var.src_name .. "." .. http_suffix_url
 
 local function GET()
     local str = utils.exec(string.format("ls %s|grep -e '.conf$'|xargs -I CC basename CC .conf", dynamic_upstreams_dir))
@@ -15,7 +15,8 @@ end
 
 -- 创建或更新指定upstream
 local function UPDATE()
-    -- 获取请求体，数据格式：{"name": "80.service.ns.kube.local.", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
+    -- 获取请求体，数据格式：{"name": "5000.grb5060d.vzrd9po6", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
+    -- upstream_name变量和json串中的name字段是一个不带后缀的域名，在这里需要拼接为一个完整域名
     ngx.req.read_body()
     local data_str = ngx.req.get_body_data()
     ngx.log(ngx.INFO, "POST upstream ", ngx.req.get_body_data())
@@ -51,7 +52,7 @@ local function UPDATE()
         ngx.status = status
         ngx.print(r)
         -- 回退
-        --dao.upstream_delete(upstream_name)
+        dao.upstream_delete(upstream_name)
     end
 
 end

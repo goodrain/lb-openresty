@@ -9,6 +9,7 @@ list = "LIST"
 -- 定义全局变量
 dyups_api_ip = "localhost:8082"
 
+http_suffix_url = os.getenv("HTTP_SUFFIX_URL")
 nginx_home = os.getenv("OPENRESTY_HOME") .. "/nginx"
 balances_src = nginx_home .. "/conf/balances"
 
