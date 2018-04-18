@@ -3,8 +3,7 @@ FROM goodrainapps/alpine:3.4
 ADD /openresty.tar.gz /usr/local/
 
 ENV OPENRESTY_HOME=/usr/local/openresty \
-    NGINX_API_PORT=8081 \
-    NGINX_DYUPS_PORT=8082
+    HTTP_SUFFIX_URL=kube.local.com
 
 WORKDIR $OPENRESTY_HOME
 

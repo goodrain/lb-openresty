@@ -15,7 +15,7 @@ end
 -- 更新指定server
 local function UPDATE()
     -- 获取请求体，数据格式如下：
-    -- {"name": "voa1i9kc_gr9e98de_8088.Rule", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "5000.grb5060d.vzrd9po6"}
+    -- {"name": "voa1i9kc_gr9e98de_8088.Rule", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "transferHTTP": "false", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "5000.grb5060d.vzrd9po6"}
     -- upstream字段是一个不带后缀的域名，在这里需要拼接为一个完整域名
     ngx.req.read_body()
     local data_str = ngx.req.get_body_data()
@@ -23,8 +23,15 @@ local function UPDATE()
 
     -- 转为map形式
     local data_table = cjsonf.decode(data_str)
-    data_table.name = server_name
     data_table.upstream = data_table.upstream .. "." .. http_suffix_url
+
+    -- 如果用户添加自定义域名是http to https类型，则会有两个相同的server名字
+    -- 为了区分它们，给http类型的文件名加一个前缀，删除的时候，两个一起删
+    if data_table.transferHTTP == true then
+        data_table.name = "transferHTTP."..server_name
+    else
+        data_table.name = server_name
+    end
 
     -- 保存证书
     if data_table.protocol == "https" then

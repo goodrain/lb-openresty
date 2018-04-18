@@ -57,7 +57,7 @@ end
 
 -- 备份与恢复
 function _M.file_is_exists(filename)
-    local r = _M.exec(string.format("ls %s|wc -l", filename))
+    local r = _M.exec(string.format("ls %s 2>/dev/null|wc -l", filename))
 
     if r == "0" then
         return false

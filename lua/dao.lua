@@ -149,15 +149,11 @@ end
 
 -- 删除server配置文件
 function _M.server_delete(server_name, protocol)
-    local filename
+    local filename = _M.get_server_file(server_name, protocol)
 
-    if protocol == "http" then
-        filename = _M.get_server_file(server_name, protocol)
-    elseif protocol == "https" then
-        filename = _M.get_server_file(server_name, protocol)
+    if protocol == "http" or protocol == "https" then
         _M.certs_del(server_name)
-    else
-        filename = _M.get_server_file(server_name, protocol)
+        utils.shell("rm -f ".._M.get_server_file("transferHTTP."..server_name, protocol).."; echo $?", "0")
     end
 
     utils.shell("rm -f "..filename.."; echo $?", "0")

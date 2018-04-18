@@ -6,27 +6,27 @@
 # setup functions
 tester(){
   if [[ x$3 == x ]]; then
-    r=`curl -X $1 -s $ip:$port/api/v1/$2`
-    printf "%-7s %-23s => $r\n" $1 $2
+    r=`curl -X $1 -s $ip:$port/v1/$2`
+    printf "%-7s %-28s => $r\n" $1 $2
   else
-    r=`curl -X $1 -sd "$2" $ip:$port/api/v1/$3`
-    printf "%-7s %-23s => $r\n" $1 $3
+    r=`curl -X $1 -sd "$2" $ip:$port/v1/$3`
+    printf "%-7s %-28s => $r\n" $1 $3
   fi
 }
 
 
 # setup variable
 ip="localhost"
-port="8081"
+port="9091"
 name=${1:-app1}
 
 
 # testing
-json1='{"name": "80.service.ns.kube.local.", "servers": ["127.0.0.1:8089"]}'
-json2='{"name": "80.service.ns.kube.local.", "servers": ["127.0.0.1:8088", "127.0.0.1:8089"]}'
+json1='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}'
+json2='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}]}'
 
-json3='{"name": "8085.app1.ns.kube.local.", "domain": "8085.app1.ns.kube.local.", "port": 8085, "path": "/", "options": {}, "upstream": "app1"}'
-json4='{"name": "8085.app1.ns.kube.local.", "domain": "8085.app1.ns.kube.local.", "port": 8085, "path": "/", "protocol": "https", "cert": "-----BEGIN CERTIFICATE-----
+json3='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+json4='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "transferHTTP": "false", "cert": "-----BEGIN CERTIFICATE-----
 MIID3jCCAsagAwIBAgIUMVptyX8awjdL0KKgiRJB1lFDHGMwDQYJKoZIhvcNAQEL
 BQAwZTELMAkGA1UEBhMCQ04xEDAOBgNVBAgTB0JlaUppbmcxEDAOBgNVBAcTB0Jl
 aUppbmcxDDAKBgNVBAoTA2s4czEPMA0GA1UECxMGU3lzdGVtMRMwEQYDVQQDEwpr
@@ -76,39 +76,26 @@ jm2fCQ2VMZt+Vuc6ojxKaNE1nLIZGT6dvjA+0qgun49fQssKZFUJqF/fJ+fjs6JD
 sBWnz/W6pQUuvatbxdx9UEd6OKhDM2cvRJ6HKW8Pnulj+hfL1SJp6g==
 -----END RSA PRIVATE KEY-----", "options": {}, "upstream": "app1"}'
 
-json5='{"name": "3360.service.ns.kube.local.", "port": 3360, "options": {}, "upstream": "app1"}'
-json6='{"name": "3360.service.ns.kube.local.", "port": 3361, "options": {}, "upstream": "app1"}'
+json5='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+json6='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
 
-tester POST "$json1" http/upstreams/$name
-tester GET http/upstreams
-tester UPDATE "$json2" http/upstreams/$name
-tester GET http/upstreams/$name
-
-
-tester POST "$json1" stream/upstreams/$name
-tester GET stream/upstreams
-tester UPDATE "$json2" stream/upstreams/$name
-tester GET stream/upstreams/$name
+tester POST "$json1" upstreams/$name
+tester UPDATE "$json2" upstreams/$name
+tester GET upstreams/$name
 
 
-tester POST "$json3" http/servers/$name
-tester GET http/servers
-tester UPDATE "$json4" http/servers/$name
-tester GET http/servers/$name
-tester DELETE http/servers/$name
+tester POST "$json3" servers/$name
+tester UPDATE "$json4" servers/$name
+tester GET servers/$name
+tester DELETE servers/$name?protocol=http
 
 
-tester POST "$json5" stream/servers/$name
-tester GET stream/servers
-tester UPDATE "$json6" stream/servers/$name
-tester GET stream/servers/$name
-tester DELETE stream/servers/$name
+tester POST "$json5" servers/$name
+tester UPDATE "$json6" servers/$name
+tester GET servers/$name
+tester DELETE servers/$name?protocol=tcp
 
 
-
-
-tester DELETE http/upstreams/$name
-tester DELETE stream/upstreams/$name
-
+tester DELETE upstreams/$name
 
 
