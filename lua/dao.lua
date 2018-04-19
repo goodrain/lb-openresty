@@ -94,10 +94,12 @@ _M.temp_http_to_https =
 -- 定义https_server配置模版
 _M.temp_tls_server =
 [[server {
-    listen %s;
+    listen %s ssl;
     server_name %s;
     ssl_certificate %s;
     ssl_certificate_key %s;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers HIGH:!aNULL:!MD5;
     %s
     location %s {
         proxy_pass http://%s;
@@ -149,14 +151,13 @@ end
 
 -- 删除server配置文件
 function _M.server_delete(server_name, protocol)
-    local filename = _M.get_server_file(server_name, protocol)
-
     if protocol == "http" or protocol == "https" then
-        _M.certs_del(server_name)
-        utils.shell("rm -f ".._M.get_server_file("transferHTTP."..server_name, protocol).."; echo $?", "0")
+        _M.certs_del("https."..server_name)
+        utils.shell("rm -f ".._M.get_server_file("http."..server_name, "http").."; echo $?", "0")
+        utils.shell("rm -f ".._M.get_server_file("https."..server_name, "https").."; echo $?", "0")
+    else
+        utils.shell("rm -f ".._M.get_server_file(server_name, protocol).."; echo $?", "0")
     end
-
-    utils.shell("rm -f "..filename.."; echo $?", "0")
 end
 
 -- 如果该server对应的证书已存在，则返回true

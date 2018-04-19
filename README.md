@@ -25,13 +25,13 @@ curl 127.0.0.1:9091/v1/upstreams/app1 -X POST -d "$json"
 
 Create or update a server.
 ```
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "cert": "this_cert_content...", "key": "this_key_content...", "options": {}, "upstream": "app1"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "cert": "this_cert_content...", "key": "this_key_content...", "options": {}, "upstream": "app1"}'
 curl 127.0.0.1:9091/v1/servers/app1 -X POST -d "$json"
 ```
 
 Delete a server.
 ```
-curl 127.0.0.1:9091/v1/servers/app1 -X DELETE
+curl 127.0.0.1:9091/v1/servers/app1?protocol=http -X DELETE
 ```
 
 Delete a upstream.

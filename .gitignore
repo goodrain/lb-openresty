@@ -1,5 +1,7 @@
+# nginx config
+dynamic_*
 
-#Mr Developer
+# Mr Developer
 .mr.developer.cfg
 
 # Godeps workspace

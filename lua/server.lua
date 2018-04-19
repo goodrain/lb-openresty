@@ -4,7 +4,7 @@ local server_name = ngx.var.src_name
 
 local function GET()
     local protocol = ngx.req.get_uri_args()["protocol"]
-    if protocol == nil or string.len(protocol) > 4 or string.match(protocol, "%a+") == nil then
+    if protocol == nil or string.len(protocol) > 5 or string.match(protocol, "%a+") == nil then
         ngx.status = HTTP_NOT_ALLOWED
         ngx.print("The protocol parameter is incorrecat")
         return
@@ -38,17 +38,15 @@ local function UPDATE()
     data_table.upstream = data_table.upstream .. "." .. http_suffix_url
 
     -- 如果用户添加自定义域名是http to https类型，则会有两个相同的server名字
-    -- 为了区分它们，给http类型的文件名加一个前缀，删除的时候，两个一起删
-    if data_table.transferHTTP == true then
-        data_table.name = "transferHTTP."..server_name
-    else
-        data_table.name = server_name
+    -- 为了区分它们，给server文件名加一个前缀，删除的时候，两个一起删
+    if data_table.protocol == "https" or data_table.protocol == "http" then
+        data_table.name = data_table.protocol .. "." .. data_table.name
     end
 
     -- 保存证书
     if data_table.protocol == "https" then
-        dao.certs_save(server_name, data_table.cert, data_table.key)
-        if not dao.certs_is_exists(server_name) then
+        dao.certs_save(data_table.name, data_table.cert, data_table.key)
+        if not dao.certs_is_exists(data_table.name) then
             local msg = "failed save cert or key file for server "..server_name
             ngx.log(ngx.ERR, msg)
 
@@ -103,7 +101,7 @@ end
 
 local function DELETE()
     local protocol = ngx.req.get_uri_args()["protocol"]
-    if protocol == nil or string.len(protocol) > 4 or string.match(protocol, "%a+") == nil then
+    if protocol == nil or string.len(protocol) > 5 or string.match(protocol, "%a+") == nil then
         ngx.status = HTTP_NOT_ALLOWED
         ngx.print("The protocol parameter is incorrecat")
         return
