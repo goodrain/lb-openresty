@@ -2,7 +2,6 @@ local _M = {}
 
 
 
-
 -- ####################### upstream #######################
 
 -- get upstream file path by upstream name
@@ -53,12 +52,8 @@ end
 -- ####################### server #######################
 
 -- 根据server名字获取文件名
-function _M.get_server_file(server_name, protocol)
-    if protocol == "http" or protocol == "https" then
-        return dynamic_http_servers_dir.."/"..server_name..".conf"
-    else
-        return dynamic_stream_servers_dir.."/"..server_name..".conf"
-    end
+function _M.get_server_file(data_table)
+    return string.format("%s/%s.%s.conf", dynamic_servers_dir, data_table.name, data_table.protocol)
 end
 
 -- 根据server名字获取证书文件名
@@ -128,13 +123,14 @@ function _M.server_save(data_table)
         end
     end
 
+    -- 根据协议选择相应模版，生成文件
     local content = ""
     if protocol == "https" then
         local cert = _M.get_cert_filename(server_name)
         local key = _M.get_key_filename(server_name)
         content = string.format(_M.temp_tls_server, data_table.port, data_table.domain, cert, key, options, data_table.path, data_table.upstream)
     elseif protocol == "http" then
-        if data_table.transferHTTP then
+        if data_table.toHTTPS then
             content = string.format(_M.temp_http_to_https, data_table.port, data_table.domain)
         else
             content = string.format(_M.temp_http_server, data_table.port, data_table.domain, options, data_table.path, data_table.upstream)
@@ -144,20 +140,14 @@ function _M.server_save(data_table)
     end
 
     -- 写入文件
-    local file = io.open(_M.get_server_file(data_table.name, data_table.protocol), "w+")
+    local file = io.open(_M.get_server_file(data_table), "w+")
     file:write(content)
-    file.close()
+    file:close()
 end
 
 -- 删除server配置文件
-function _M.server_delete(server_name, protocol)
-    if protocol == "http" or protocol == "https" then
-        _M.certs_del("https."..server_name)
-        utils.shell("rm -f ".._M.get_server_file("http."..server_name, "http").."; echo $?", "0")
-        utils.shell("rm -f ".._M.get_server_file("https."..server_name, "https").."; echo $?", "0")
-    else
-        utils.shell("rm -f ".._M.get_server_file(server_name, protocol).."; echo $?", "0")
-    end
+function _M.server_delete(data_table)
+    utils.shell("rm -f ".._M.get_server_file(data_table).."; echo $?", "0")
 end
 
 -- 如果该server对应的证书已存在，则返回true

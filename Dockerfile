@@ -3,7 +3,7 @@ FROM goodrainapps/alpine:3.4
 ADD /openresty.tar.gz /usr/local/
 
 ENV OPENRESTY_HOME=/usr/local/openresty \
-    HTTP_SUFFIX_URL=kube.local.com
+    HTTP_SUFFIX_URL=rainbond.goodrain.local
 
 WORKDIR $OPENRESTY_HOME
 

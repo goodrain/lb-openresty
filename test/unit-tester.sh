@@ -7,10 +7,10 @@
 tester(){
   if [[ x$3 == x ]]; then
     r=`curl -X $1 -s $ip:$port/v1/$2`
-    printf "%-7s %-28s => $r\n" $1 $2
+    printf "%-7s %-20s =>  $r\n" $1 $2
   else
-    r=`curl -X $1 -sd "$2" $ip:$port/v1/$3`
-    printf "%-7s %-28s => $r\n" $1 $3
+    r=`curl -X $1 $ip:$port/v1/$2 -sd "$3"`
+    printf "%-7s %-20s =>  $r\n" $1 $2
   fi
 }
 
@@ -22,11 +22,7 @@ name=${1:-app1}
 
 
 # testing
-json1='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}'
-json2='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}]}'
-
-json3='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
-json4='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "transferHTTP": "false", "cert": "-----BEGIN CERTIFICATE-----
+json_https='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "toHTTPS": "false", "cert": "-----BEGIN CERTIFICATE-----
 MIID3jCCAsagAwIBAgIUMVptyX8awjdL0KKgiRJB1lFDHGMwDQYJKoZIhvcNAQEL
 BQAwZTELMAkGA1UEBhMCQ04xEDAOBgNVBAgTB0JlaUppbmcxEDAOBgNVBAcTB0Jl
 aUppbmcxDDAKBgNVBAoTA2s4czEPMA0GA1UECxMGU3lzdGVtMRMwEQYDVQQDEwpr
@@ -76,24 +72,38 @@ jm2fCQ2VMZt+Vuc6ojxKaNE1nLIZGT6dvjA+0qgun49fQssKZFUJqF/fJ+fjs6JD
 sBWnz/W6pQUuvatbxdx9UEd6OKhDM2cvRJ6HKW8Pnulj+hfL1SJp6g==
 -----END RSA PRIVATE KEY-----", "options": {}, "upstream": "app1"}'
 
-json5='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
-json6='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "transferHTTP": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
 
-tester POST "$json1" upstreams/$name
-tester UPDATE "$json2" upstreams/$name
-tester GET upstreams/$name
-
-
-tester POST "$json3" servers/$name
-tester UPDATE "$json4" servers/$name
-tester GET servers/$name?protocol=http
-tester DELETE servers/$name?protocol=http
+# 创建一个upstream，在创建server时，相应的upstream必须是已存在的
+json='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}'
+tester UPDATE upstreams/$name "$json"
+tester GET upstreams
 
 
-tester POST "$json5" servers/$name
-tester UPDATE "$json6" servers/$name
-tester GET servers/$name?protocol=tcp
-tester DELETE servers/$name?protocol=tcp
+# https类型的服务，证书会与服务同时保存和删除
+tester UPDATE servers/$name "$json_https"
+tester GET servers '{"protocol": "https"}'
+tester DELETE servers/$name '{"protocol": "https"}'
+
+
+# http类型的服务，如果toHTTPS字段为true，将会把http://myapp.sycki.com所有请求重定向到https://myapp.sycki.com
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+tester UPDATE servers/$name "$json"
+tester GET servers '{"protocol": "http"}'
+tester DELETE servers/$name '{"protocol": "http"}'
+
+
+# tcp类型的服务
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+tester UPDATE servers/$name "$json"
+tester GET servers '{"protocol": "tcp"}'
+tester DELETE servers/$name '{"protocol": "tcp"}'
+
+
+# udp类型的服务
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+tester UPDATE servers/$name "$json"
+tester GET servers '{"protocol": "udp"}'
+tester DELETE servers/$name '{"protocol": "udp"}'
 
 
 tester DELETE upstreams/$name

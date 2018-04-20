@@ -1,28 +1,38 @@
 --[[实现对upstream的操作，并写入配置文件，upstream与上层应用对应]]
 
+ngx.req.read_body()
+local data_json = ngx.req.get_body_data()
 local upstream_name = ngx.var.src_name .. "." .. http_suffix_url
 
-local function GET()
-    local str = utils.exec(string.format("ls %s|grep -e '.conf$'|xargs -I CC basename CC .conf", dynamic_upstreams_dir))
-    local arr = utils.split(str, "\n")
-    local json = cjsonf.encode(arr)
 
-    ngx.log(ngx.INFO, json)
+-- request {}
+-- response {"protocol": "none", "items": ["up1", "up2"]}
+local function GET()
+    local lines = utils.exec(string.format("ls %s 2>/dev/null|grep -e '.conf$'|xargs -I CC basename CC .%s.conf", dynamic_upstreams_dir, http_suffix_url))
+    local items = utils.split(lines, "\n")
+
+    local result = {}
+    result.protocol = "none"
+    result.items = items
+
     ngx.status = HTTP_OK
-    ngx.print(json)
+    ngx.print(cjsonf.encode(result))
 
 end
 
--- 创建或更新指定upstream
+-- request {"name": "5000.grb5060d.vzrd9po6", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
+-- response {"status": 205, "message": "success"}
 local function UPDATE()
-    -- 获取请求体，数据格式：{"name": "5000.grb5060d.vzrd9po6", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
-    -- upstream_name变量和json串中的name字段是一个不带后缀的域名，在这里需要拼接为一个完整域名
-    ngx.req.read_body()
-    local data_str = ngx.req.get_body_data()
-    ngx.log(ngx.INFO, "POST upstream ", ngx.req.get_body_data())
+    local data_table = cjsonf.decode(data_json)
 
-    -- 转为map形式
-    local data_table = cjsonf.decode(data_str)
+    -- 参数验证
+    if data_table == nil then
+        ngx.log(ngx.ERR, string.format("Illegal parameter body: %s", data_json))
+        ngx.status = HTTP_NOT_ALLOWED
+        ngx.print(string.format("Illegal parameter body: %s", data_json))
+        return
+    end
+
     data_table.name = upstream_name
 
     -- 将server列表拼接为单行形式："server 127.0.0.1:8089;server 127.0.0.1:8088;"
@@ -31,7 +41,7 @@ local function UPDATE()
         servers_line =  string.format("%sserver %s;", servers_line, item.addr)
     end
 
-    -- 更新内存中的upstream
+    -- 通过dyups插件更新内存中的upstream
     local status, r = dyups.update(upstream_name, servers_line);
 
     -- 更新持久层
@@ -39,21 +49,24 @@ local function UPDATE()
 
     -- 合并日志信息
     if err ~= nil then
-        r = string.format("%s; %s", r, err)
+        result.message = string.format("%s; %s", r, err)
     end
 
-    -- 返回结果
+    -- 处理结果
+    local result = {}
+    result.message = r
     if status == ngx.HTTP_OK and err == nil then
-        ngx.log(ngx.INFO, r)
-        ngx.status = HTTP_OK
-        ngx.print(r)
+        result.status = HTTP_OK
     else
-        ngx.log(ngx.ERR, r)
-        ngx.status = status
-        ngx.print(r)
+        ngx.log(ngx.ERR, result.message)
+        result.status = status
         -- 回退
         dao.upstream_delete(upstream_name)
     end
+
+    -- 返回结果
+    ngx.status = result.status
+    ngx.print(cjsonf.encode(result))
 
 end
 
@@ -61,19 +74,25 @@ local function POST()
     UPDATE()
 end
 
+-- request {}
+-- response {"status": 205, "message": "success"}
 local function DELETE()
     -- 创建或更新指定upstream
     local status, r = dyups.delete(upstream_name)
 
-    -- 返回结果
+    -- 处理结果
+    local result = {}
+    result.message = r
     if status == ngx.HTTP_OK or status == 404 then
-        ngx.log(ngx.INFO, r)
-        ngx.status = HTTP_OK
-        ngx.print(r)
+        result.status = HTTP_OK
     else
-        ngx.log(ngx.ERR, r)
-        ngx.status = status
+        ngx.log(ngx.ERR, result.message)
+        result.status = status
     end
+
+    -- 返回结果
+    ngx.status = result.status
+    ngx.print(cjsonf.encode(result))
 
     -- 更新持久层
     dao.upstream_delete(upstream_name)
@@ -84,6 +103,7 @@ end
 -- 处理请求
 local function main()
     local method = ngx.req.get_method()
+    ngx.log(ngx.INFO, method, " /v1/upstreams/", upstream_name, " ", data_json)
 
     if method == post then
         POST()

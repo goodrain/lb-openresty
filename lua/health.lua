@@ -1,8 +1,7 @@
 
 function GET()
-    local r = [[{"action": "/api", "items": ["/v1/upstreams", "/v1/servers"]}]]
     ngx.status = HTTP_OK
-    ngx.print(r)
+    ngx.say("ok")
 end
 
 -- 处理请求

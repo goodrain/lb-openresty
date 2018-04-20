@@ -13,8 +13,7 @@ http_suffix_url = os.getenv("HTTP_SUFFIX_URL")
 nginx_home = os.getenv("OPENRESTY_HOME") .. "/nginx"
 balances_src = nginx_home .. "/conf/balances"
 
-dynamic_http_servers_dir = nginx_home .. "/conf/balances/dynamic_http_servers"
-dynamic_stream_servers_dir = nginx_home .. "/conf/balances/dynamic_stream_servers"
+dynamic_servers_dir = nginx_home .. "/conf/balances/dynamic_servers"
 dynamic_upstreams_dir = nginx_home .. "/conf/balances/dynamic_upstreams"
 dynamic_certs_dir = nginx_home .. "/conf/balances/dynamic_certs"
 

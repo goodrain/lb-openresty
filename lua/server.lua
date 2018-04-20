@@ -1,47 +1,55 @@
 --[[实现对server的操作，并写入配置文件，server对应上层的一条规则]]
 
+ngx.req.read_body()
+local data_json = ngx.req.get_body_data()
 local server_name = ngx.var.src_name
 
+-- request {"protocol": "http/https/tcp/udp"}
+-- response {"protocol": "udp", "items": ["s1", "s2"]}
 local function GET()
-    local protocol = ngx.req.get_uri_args()["protocol"]
-    if protocol == nil or string.len(protocol) > 5 or string.match(protocol, "%a+") == nil then
+    local data_table = cjsonf.decode(data_json)
+
+    -- 参数验证
+    if data_table == nil or
+            data_table.protocol == nil or
+            string.len(data_table.protocol) < 3 or
+            string.len(data_table.protocol) > 5 or
+            string.match(data_table.protocol, "%a+") == nil then
+        ngx.log(ngx.ERR, string.format("Illegal parameter protocol: %s", data_json))
         ngx.status = HTTP_NOT_ALLOWED
-        ngx.print("The protocol parameter is incorrecat")
+        ngx.print(string.format("Illegal parameter protocol: %s", data_json))
         return
     end
-    
-    local path = dynamic_stream_servers_dir
-    if protocol == "http" or protocol == "https" then
-        path = dynamic_http_servers_dir
-    end
-    
-    local str = utils.exec(string.format("ls %s|grep -e '.conf$'|awk -F '.' '{print $1}'", path))
-    local arr = utils.split(str, "\n")
-    local json = cjsonf.encode(arr)
 
-    ngx.log(ngx.INFO, json)
+    local protocol = data_table.protocol
+
+    -- 获取server列表
+    local lines = utils.exec(string.format("ls %s 2>/dev/null|grep -e '%s.conf$'|xargs -I CC basename CC .%s.conf", dynamic_servers_dir, protocol, protocol))
+    local items = utils.split(lines, "\n")
+
+    -- 返回结果
+    local result = {}
+    result.protocol = protocol
+    result.items = items
+
     ngx.status = HTTP_OK
-    ngx.print(json)
+    ngx.print(cjsonf.encode(result))
 end
 
--- 更新指定server
+-- request {"name": "voa1i9kc_gr9e98de_8088.Rule", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "toHTTPS": "false", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "5000.grb5060d.vzrd9po6"}
+-- response {"status": 205, "message": "success"}
 local function UPDATE()
-    -- 获取请求体，数据格式如下：
-    -- {"name": "voa1i9kc_gr9e98de_8088.Rule", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "transferHTTP": "false", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "5000.grb5060d.vzrd9po6"}
-    -- upstream字段是一个不带后缀的域名，在这里需要拼接为一个完整域名
-    ngx.req.read_body()
-    local data_str = ngx.req.get_body_data()
-    ngx.log(ngx.INFO, "POST server ", ngx.req.get_body_data())
+    local data_table = cjsonf.decode(data_json)
 
-    -- 转为map形式
-    local data_table = cjsonf.decode(data_str)
-    data_table.upstream = data_table.upstream .. "." .. http_suffix_url
-
-    -- 如果用户添加自定义域名是http to https类型，则会有两个相同的server名字
-    -- 为了区分它们，给server文件名加一个前缀，删除的时候，两个一起删
-    if data_table.protocol == "https" or data_table.protocol == "http" then
-        data_table.name = data_table.protocol .. "." .. data_table.name
+    -- 参数验证
+    if data_table == nil then
+        ngx.status = HTTP_NOT_ALLOWED
+        ngx.print(string.format("Illegal parameter body: %s", data_json))
+        return
     end
+
+    -- upstream字段是一个不带后缀的域名，在这里需要根据环境变量中的值拼接为一个完整域名才能找到对应upstream
+    data_table.upstream = data_table.upstream .. "." .. http_suffix_url
 
     -- 保存证书
     if data_table.protocol == "https" then
@@ -57,7 +65,7 @@ local function UPDATE()
     end
 
     -- 根据协议名称获取文件全名
-    local filename = dao.get_server_file(data_table.name, data_table.protocol)
+    local filename = dao.get_server_file(data_table)
 
     -- 如果文件存在则备份
     local is_exists = utils.file_is_exists(filename)
@@ -71,26 +79,31 @@ local function UPDATE()
     -- 热加载配置
     local err = utils.shell(utils.cmd_restart_nginx, "0")
 
+    local result = {}
+
     -- 处理结果
     if err ~= nil then
         -- 合并日志信息
-        ngx.log(ngx.ERR, err)
-        ngx.status = HTTP_NOT_ALLOWED
-        ngx.print(err)
+        result.status = HTTP_NOT_ALLOWED
+        result.message = err
 
+        ngx.log(ngx.ERR, result.message)
         -- 如果配置文件错误则恢复到之前的状态
         if is_exists then
             utils.file_recover(filename)
         else
-            dao.server_delete(server_name, data_table.protocol)
+            dao.server_delete(data_table)
         end
     else
-        ngx.status = HTTP_OK
-        ngx.print("success")
+        result.status = HTTP_OK
+        result.message = "success"
 
         -- 如果配置文件正常加载则清除备份文件
         utils.file_clean_bak(filename)
     end
+
+    ngx.status = result.status
+    ngx.print(cjsonf.encode(result))
 
 end
 
@@ -99,29 +112,51 @@ local function POST()
     UPDATE()
 end
 
+-- request {"protocol": "http/https/tcp/udp"}
+-- response {"status": 205, "message": "success"}
 local function DELETE()
-    local protocol = ngx.req.get_uri_args()["protocol"]
-    if protocol == nil or string.len(protocol) > 5 or string.match(protocol, "%a+") == nil then
+    local data_table = cjsonf.decode(data_json)
+
+    if data_table == nil or
+            data_table.protocol == nil or
+            string.len(data_table.protocol) < 3 or
+            string.len(data_table.protocol) > 5 or
+            string.match(data_table.protocol, "%a+") == nil then
+        ngx.log(ngx.ERR, string.format("Illegal parameter protocol: %s", data_json))
         ngx.status = HTTP_NOT_ALLOWED
-        ngx.print("The protocol parameter is incorrecat")
+        ngx.print(string.format("Illegal parameter protocol: %s", data_json))
         return
     end
 
+    local protocol = data_table.protocol
+
+    data_table.name = server_name
+
+    -- 删除证书
+    if protocol == "https" then
+        dao.certs_del(data_table.name)
+    end
+
     -- 更新持久层
-    dao.server_delete(server_name, protocol)
+    dao.server_delete(data_table)
 
     -- 热加载配置
     utils.shell(utils.cmd_restart_nginx, "0")
 
     -- 处理结果
-    ngx.status = HTTP_OK
-    ngx.print("success")
+    local result = {}
+    result.status = HTTP_OK
+    result.message = "success"
+
+    ngx.status = result.status
+    ngx.print(cjsonf.encode(result))
 end
 
 
 -- 处理请求
 local function main()
     local method = ngx.req.get_method()
+    ngx.log(ngx.INFO, method, " /v1/servers/", server_name, " ", data_json)
 
     if method == post then
         POST()
