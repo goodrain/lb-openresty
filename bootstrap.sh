@@ -2,7 +2,7 @@
 
 set -x
 
-cd $OPENRESTY_HOME/nginx/conf/dynamics
+mkdir -p $OPENRESTY_HOME/nginx/conf/dynamics ; cd $OPENRESTY_HOME/nginx/conf/dynamics
 mkdir -p dynamic_certs dynamic_servers dynamic_upstreams
 
 [[ x$DEFAULT_PORT == x ]] && DEFAULT_PORT=80
