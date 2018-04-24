@@ -8,7 +8,7 @@ ENV OPENRESTY_HOME=/usr/local/openresty \
 WORKDIR $OPENRESTY_HOME
 
 COPY /conf $OPENRESTY_HOME/nginx/conf.default
-COPY /lua $OPENRESTY_HOME/nginx/lua.default
+COPY /lua $OPENRESTY_HOME/nginx/lua
 COPY /bootstrap.sh /bootstrap.sh
 
 CMD /bootstrap.sh

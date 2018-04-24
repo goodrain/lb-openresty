@@ -17,7 +17,7 @@ tester(){
 
 # setup variable
 ip="localhost"
-port="9091"
+port="10002"
 name=${1:-app1}
 
 

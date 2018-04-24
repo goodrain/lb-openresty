@@ -12,16 +12,21 @@
 ## 安装
 首先克隆它到你的本地，然后进入项目目录。
 
-### 编译并运行
+### 编译
 如果你打算通过你的域名来访问它，那么你可能需要修改容器中的环境变量`HTTP_SUFFIX_URL`，它被定义在Dockerfile文件中。
 
 ```
 ./build.sh
 ```
 
+### 运行
+```
+./run.sh
+```
+
 ### 检查它是否已经运行
 ```
-curl 127.0.0.1:9091/health
+curl 127.0.0.1:10002/health
 ```
 
 ### 运行测试脚本
@@ -34,23 +39,23 @@ test/unit-tester.sh
 ### 创建或更新一个upstream
 ```
 json='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}'
-curl 127.0.0.1:9091/v1/upstreams/app1 -X POST -d "$json"
+curl 127.0.0.1:10002/v1/upstreams/app1 -X POST -d "$json"
 ```
 
 ### 创建或更新一个server并指向上面的upstream
 ```
 json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "toHTTPS": "false", "cert": "this_cert_content...", "key": "this_key_content...", "options": {}, "upstream": "app1"}'
-curl 127.0.0.1:9091/v1/servers/app1 -X POST -d "$json"
+curl 127.0.0.1:10002/v1/servers/app1 -X POST -d "$json"
 ```
 
 ### 删除一个server
 ```
-curl 127.0.0.1:9091/v1/servers/app1 -X DELETE -d '{"protocol": "http"}'
+curl 127.0.0.1:10002/v1/servers/app1 -X DELETE -d '{"protocol": "http"}'
 ```
 
 ### 删除一个upstream
 ```
-curl 127.0.0.1:9091/v1/upstreams/app1 -X DELETE
+curl 127.0.0.1:10002/v1/upstreams/app1 -X DELETE
 ```
 
 ## 参考
