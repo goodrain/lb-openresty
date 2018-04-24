@@ -73,7 +73,17 @@ _M.temp_http_server =
     listen %s;
     server_name %s;
     %s
+    error_page 404 500 502 503 504 /waiting.html;
+    location = /waiting.html {
+        root html;
+    }
+
     location %s {
+        proxy_set_header Host $host:$server_port;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect off;
+
         proxy_pass http://%s;
     }
 }]]
@@ -96,7 +106,17 @@ _M.temp_tls_server =
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!MD5;
     %s
+    error_page 404 500 502 503 504 /waiting.html;
+    location = /waiting.html {
+        root html;
+    }
+
     location %s {
+        proxy_set_header Host $host:$server_port;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect off;
+
         proxy_pass http://%s;
     }
 }]]
@@ -104,7 +124,9 @@ _M.temp_tls_server =
 -- 定义stream_server配置模版
 _M.temp_stream_server =
 [[server {
-    listen %s;
+    listen %s so_keepalive=on;
+    proxy_connect_timeout 1s;
+    proxy_timeout 3s;
     %s
     proxy_pass %s;
 }]]

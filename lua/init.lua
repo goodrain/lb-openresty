@@ -11,11 +11,10 @@ dyups_api_ip = "localhost:10003"
 
 http_suffix_url = os.getenv("HTTP_SUFFIX_URL")
 nginx_home = os.getenv("OPENRESTY_HOME") .. "/nginx"
-balances_src = nginx_home .. "/conf/balances"
 
-dynamic_servers_dir = nginx_home .. "/conf/balances/dynamic_servers"
-dynamic_upstreams_dir = nginx_home .. "/conf/balances/dynamic_upstreams"
-dynamic_certs_dir = nginx_home .. "/conf/balances/dynamic_certs"
+dynamic_servers_dir = nginx_home .. "/conf/dynamics/dynamic_servers"
+dynamic_upstreams_dir = nginx_home .. "/conf/dynamics/dynamic_upstreams"
+dynamic_certs_dir = nginx_home .. "/conf/dynamics/dynamic_certs"
 
 HTTP_OK = 205
 HTTP_NOT_ALLOWED = 405
