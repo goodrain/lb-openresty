@@ -5,4 +5,7 @@ set -x
 cd $OPENRESTY_HOME/nginx/conf/dynamics
 mkdir -p dynamic_certs dynamic_servers dynamic_upstreams
 
-exec $OPENRESTY_HOME/nginx/sbin/nginx -g "daemon off;"
+[[ x$DEFAULT_PORT == x ]] && DEFAULT_PORT=80
+sed -i "s/listen   80;/listen   $DEFAULT_PORT;/g" $OPENRESTY_HOME/nginx/conf/nginx.conf
+
+$OPENRESTY_HOME/nginx/sbin/nginx -g "daemon off;"
