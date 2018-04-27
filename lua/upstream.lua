@@ -47,13 +47,14 @@ local function UPDATE()
     -- 更新持久层
     local err = dao.upstream_save(data_table)
 
+    local result = {}
+
     -- 合并日志信息
     if err ~= nil then
         result.message = string.format("%s; %s", r, err)
     end
 
     -- 处理结果
-    local result = {}
     result.message = r
     if status == ngx.HTTP_OK and err == nil then
         result.status = HTTP_OK
