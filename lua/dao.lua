@@ -25,7 +25,7 @@ function _M.upstream_save(data_table)
         if servers_line == "" then
             servers_line = string.format("server %s max_fails=3 fail_timeout=6s weight=%s;", item.addr, item.weight)
         else
-            servers_line = string.format("%s\n    server %s weight=%s;", servers_line, item.addr, item.weight)
+            servers_line = string.format("%s\n    server %s max_fails=3 fail_timeout=6s weight=%s;", servers_line, item.addr, item.weight)
         end
     end
 
