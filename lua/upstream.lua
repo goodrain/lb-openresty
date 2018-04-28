@@ -2,7 +2,7 @@
 
 ngx.req.read_body()
 local data_json = ngx.req.get_body_data()
-local upstream_name = ngx.var.src_name .. "." .. http_suffix_url
+local upstream_name = ngx.var.src_name .. "." .. http_suffix_url .. "-upstream"
 
 
 -- request {}
@@ -38,7 +38,7 @@ local function UPDATE()
     -- 将server列表拼接为单行形式："server 127.0.0.1:8089;server 127.0.0.1:8088;"
     local servers_line = ""
     for _, item in pairs(data_table.servers) do
-        servers_line =  string.format("%sserver %s;", servers_line, item.addr)
+        servers_line =  string.format("%sserver %s weight=%s max_fails=3 fail_timeout=6s;", servers_line, item.addr, item.weight)
     end
 
     -- 通过dyups插件更新内存中的upstream
@@ -78,7 +78,6 @@ end
 -- request {}
 -- response {"status": 205, "message": "success"}
 local function DELETE()
-    -- 创建或更新指定upstream
     local status, r = dyups.delete(upstream_name)
 
     -- 处理结果

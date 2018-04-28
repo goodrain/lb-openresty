@@ -23,9 +23,9 @@ function _M.upstream_save(data_table)
     local servers_line = ""
     for _, item in pairs(data_table.servers) do
         if servers_line == "" then
-            servers_line = string.format("server %s max_fails=3 fail_timeout=6s weight=%s;", item.addr, item.weight)
+            servers_line = string.format("server %s weight=%s max_fails=3 fail_timeout=6s;", item.addr, item.weight)
         else
-            servers_line = string.format("%s\n    server %s max_fails=3 fail_timeout=6s weight=%s;", servers_line, item.addr, item.weight)
+            servers_line = string.format("%s\n    server %s weight=%s max_fails=3 fail_timeout=6s;", servers_line, item.addr, item.weight)
         end
     end
 
@@ -79,12 +79,13 @@ _M.temp_http_server =
     }
 
     location %s {
+        set $upstream "%s";
         proxy_set_header Host $host:$server_port;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_redirect off;
 
-        proxy_pass http://%s;
+        proxy_pass http://$upstream;
     }
 }]]
 
@@ -112,12 +113,13 @@ _M.temp_tls_server =
     }
 
     location %s {
+        set $upstream "%s";
         proxy_set_header Host $host:$server_port;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_redirect off;
 
-        proxy_pass http://%s;
+        proxy_pass http://$upstream;
     }
 }]]
 
