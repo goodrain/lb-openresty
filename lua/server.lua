@@ -49,7 +49,7 @@ local function UPDATE()
     end
 
     -- upstream字段是一个不带后缀的域名，在这里需要根据环境变量中的值拼接为一个完整域名才能找到对应upstream
-    data_table.upstream = data_table.upstream .. "." .. http_suffix_url .. "-upstream"
+    data_table.upstream = data_table.upstream .. "." .. http_suffix_url
 
     -- 保存证书
     if data_table.protocol == "https" then

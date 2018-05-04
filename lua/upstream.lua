@@ -2,17 +2,33 @@
 
 ngx.req.read_body()
 local data_json = ngx.req.get_body_data()
-local upstream_name = ngx.var.src_name .. "." .. http_suffix_url .. "-upstream"
+local upstream_name = ngx.var.src_name .. "." .. http_suffix_url
 
 
--- request {}
+-- request {"protocol": "http/https/tcp/udp"}
 -- response {"protocol": "none", "items": ["up1", "up2"]}
 local function GET()
-    local lines = utils.exec(string.format("ls %s 2>/dev/null|grep -e '.conf$'|xargs -I CC basename CC .%s.conf", dynamic_upstreams_dir, http_suffix_url))
+    local data_table = cjsonf.decode(data_json)
+
+    -- 参数验证
+    if data_table == nil or
+            data_table.protocol == nil or
+            string.len(data_table.protocol) < 3 or
+            string.len(data_table.protocol) > 5 or
+            string.match(data_table.protocol, "%a+") == nil then
+        ngx.log(ngx.ERR, string.format("Illegal parameter protocol: %s", data_json))
+        ngx.status = HTTP_NOT_ALLOWED
+        ngx.print(string.format("Illegal parameter protocol: %s", data_json))
+        return
+    end
+
+    local protocol = data_table.protocol
+
+    local lines = utils.exec(string.format("ls %s 2>/dev/null|grep -e '%s.conf$'|xargs -I CC basename CC .%s.%s.conf", dynamic_upstreams_dir, protocol, http_suffix_url, protocol))
     local items = utils.split(lines, "\n")
 
     local result = {}
-    result.protocol = "none"
+    result.protocol = data_table.protocol
     result.items = items
 
     ngx.status = HTTP_OK
@@ -20,7 +36,7 @@ local function GET()
 
 end
 
--- request {"name": "5000.grb5060d.vzrd9po6", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}
+-- request {"name": "5000.grb5060d.vzrd9po6", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}], "protocol": "tcp"}
 -- response {"status": 205, "message": "success"}
 local function UPDATE()
     local data_table = cjsonf.decode(data_json)
@@ -62,7 +78,7 @@ local function UPDATE()
         ngx.log(ngx.ERR, result.message)
         result.status = status
         -- 回退
-        dao.upstream_delete(upstream_name)
+        dao.upstream_delete(data_table)
     end
 
     -- 返回结果
@@ -75,9 +91,24 @@ local function POST()
     UPDATE()
 end
 
--- request {}
+-- request {"protocol": "http/https/tcp/udp"}
 -- response {"status": 205, "message": "success"}
 local function DELETE()
+    local data_table = cjsonf.decode(data_json)
+
+    if data_table == nil or
+            data_table.protocol == nil or
+            string.len(data_table.protocol) < 3 or
+            string.len(data_table.protocol) > 5 or
+            string.match(data_table.protocol, "%a+") == nil then
+        ngx.log(ngx.ERR, string.format("Illegal parameter protocol: %s", data_json))
+        ngx.status = HTTP_NOT_ALLOWED
+        ngx.print(string.format("Illegal parameter protocol: %s", data_json))
+        return
+    end
+
+    data_table.name = upstream_name
+
     local status, r = dyups.delete(upstream_name)
 
     -- 处理结果
@@ -95,7 +126,7 @@ local function DELETE()
     ngx.print(cjsonf.encode(result))
 
     -- 更新持久层
-    dao.upstream_delete(upstream_name)
+    dao.upstream_delete(data_table)
 end
 
 

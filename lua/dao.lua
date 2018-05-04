@@ -5,8 +5,8 @@ local _M = {}
 -- ####################### upstream #######################
 
 -- get upstream file path by upstream name
-function _M.get_upstream_file(name)
-    return dynamic_upstreams_dir.."/"..name..".conf"
+function _M.get_upstream_file(data_table)
+    return string.format("%s/%s.%s.conf", dynamic_upstreams_dir, data_table.name, data_table.protocol)
 end
 
 -- 定义upstream文件模版
@@ -17,7 +17,7 @@ _M.temp_upstream =
 
 function _M.upstream_save(data_table)
     local name = data_table.name
-    local upstream_file = _M.get_upstream_file(name)
+    local upstream_file = _M.get_upstream_file(data_table)
 
     -- 将server列表拼接为多行形式
     local servers_line = ""
@@ -41,8 +41,8 @@ function _M.upstream_save(data_table)
     return utils.shell(utils.cmd_check_nginx, "0")
 end
 
-function _M.upstream_delete(name)
-    local upstream_file = _M.get_upstream_file(name)
+function _M.upstream_delete(data_table)
+    local upstream_file = _M.get_upstream_file(data_table)
     return utils.shell("rm -f "..upstream_file)
 end
 
@@ -130,9 +130,7 @@ _M.temp_stream_server =
     proxy_connect_timeout 1s;
     proxy_timeout 3s;
     %s
-
-    set $upstream "%s";
-    proxy_pass $upstream;
+    proxy_pass %s;
 }]]
 
 -- 保存server配置文件

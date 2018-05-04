@@ -74,9 +74,9 @@ sBWnz/W6pQUuvatbxdx9UEd6OKhDM2cvRJ6HKW8Pnulj+hfL1SJp6g==
 
 
 # 创建一个upstream，在创建server时，相应的upstream必须是已存在的
-json='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}]}'
+json='{"name": "app1", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}], "protocol": "http"}'
 tester UPDATE upstreams/$name "$json"
-tester GET upstreams
+tester GET upstreams '{"protocol": "http"}'
 
 
 # https类型的服务，证书会与服务同时保存和删除
@@ -106,6 +106,6 @@ tester GET servers '{"protocol": "udp"}'
 tester DELETE servers/$name '{"protocol": "udp"}'
 
 
-tester DELETE upstreams/$name
+tester DELETE upstreams/$name '{"protocol": "http"}'
 
 

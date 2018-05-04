@@ -5,7 +5,7 @@
 tag=`grep '^version ' VERSION | awk '{print $2}'`
 name=rbd-lb
 options="--network host"
-[[ x`uname -a|awk '{print $1}'` == "xDarwin" ]] && options="-p 80:80 -p 443:443 -p 9091:9091"
+[[ x`uname -a|awk '{print $1}'` == "xDarwin" ]] && options="-p 80:80 -p 443:443 -p 10002:10002"
 
 
 # start
