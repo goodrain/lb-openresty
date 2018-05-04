@@ -130,7 +130,9 @@ _M.temp_stream_server =
     proxy_connect_timeout 1s;
     proxy_timeout 3s;
     %s
-    proxy_pass %s;
+
+    set $upstream "%s";
+    proxy_pass $upstream;
 }]]
 
 -- 保存server配置文件
