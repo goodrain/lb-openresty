@@ -60,10 +60,31 @@ local function UPDATE()
     -- 通过dyups插件更新内存中的upstream
     local status, r = dyups.update(upstream_name, servers_line);
 
+    local result = {}
+    result.status = status
+
+    -- 根据协议名称获取文件全名
+    local filename = dao.get_upstream_file(data_table)
+
+    -- 如果文件存在则备份
+    local is_exists = utils.file_is_exists(filename)
+    if is_exists then
+        utils.file_backup(filename)
+    end
+
     -- 更新持久层
     local err = dao.upstream_save(data_table)
 
-    local result = {}
+    if data_table.protocol == "tcp" then
+        -- 热加载配置
+        local err1 = utils.shell(utils.cmd_restart_nginx, "0")
+
+        -- 合并日志信息
+        if err1 ~= nil then
+            err = string.format("%s; %s", err, err1)
+        end
+
+    end
 
     -- 合并日志信息
     if err ~= nil then
@@ -72,13 +93,18 @@ local function UPDATE()
 
     -- 处理结果
     result.message = r
-    if status == ngx.HTTP_OK and err == nil then
+    if result.status == ngx.HTTP_OK and err == nil then
         result.status = HTTP_OK
+        -- 如果配置文件正常加载则清除备份文件
+        utils.file_clean_bak(filename)
     else
         ngx.log(ngx.ERR, result.message)
-        result.status = status
-        -- 回退
-        dao.upstream_delete(data_table)
+        -- 如果配置文件错误则恢复到之前的状态
+        if is_exists then
+            utils.file_recover(filename)
+        else
+            dao.upstream_delete(data_table)
+        end
     end
 
     -- 返回结果

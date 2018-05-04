@@ -79,6 +79,11 @@ tester UPDATE upstreams/$name "$json"
 tester GET upstreams '{"protocol": "http"}'
 
 
+# 为tcp类型的server创建一个upstream，在创建server时，相应的upstream必须是已存在的
+json='{"name": "app2", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}], "protocol": "tcp"}'
+tester UPDATE upstreams/app2 "$json"
+tester GET upstreams '{"protocol": "tcp"}'
+
 # https类型的服务，证书会与服务同时保存和删除
 tester UPDATE servers/$name "$json_https"
 tester GET servers '{"protocol": "https"}'
@@ -93,19 +98,21 @@ tester DELETE servers/$name '{"protocol": "http"}'
 
 
 # tcp类型的服务
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
 tester UPDATE servers/$name "$json"
 tester GET servers '{"protocol": "tcp"}'
 tester DELETE servers/$name '{"protocol": "tcp"}'
 
 
 # udp类型的服务
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
 tester UPDATE servers/$name "$json"
 tester GET servers '{"protocol": "udp"}'
 tester DELETE servers/$name '{"protocol": "udp"}'
 
 
 tester DELETE upstreams/$name '{"protocol": "http"}'
+exit
+tester DELETE upstreams/app2 '{"protocol": "tcp"}'
 
 
