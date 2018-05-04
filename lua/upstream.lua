@@ -75,7 +75,7 @@ local function UPDATE()
     -- 更新持久层
     local err = dao.upstream_save(data_table)
 
-    if data_table.protocol == "tcp" then
+    if data_table.protocol == "tcp" or data_table.protocol == "udp" then
         -- 热加载配置
         local err1 = utils.shell(utils.cmd_restart_nginx, "0")
 

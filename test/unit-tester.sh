@@ -22,7 +22,7 @@ name=${1:-app1}
 
 
 # testing
-json_https='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "toHTTPS": "false", "cert": "-----BEGIN CERTIFICATE-----
+json_https='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "https", "toHTTPS": false, "cert": "-----BEGIN CERTIFICATE-----
 MIID3jCCAsagAwIBAgIUMVptyX8awjdL0KKgiRJB1lFDHGMwDQYJKoZIhvcNAQEL
 BQAwZTELMAkGA1UEBhMCQ04xEDAOBgNVBAgTB0JlaUppbmcxEDAOBgNVBAcTB0Jl
 aUppbmcxDDAKBgNVBAoTA2s4czEPMA0GA1UECxMGU3lzdGVtMRMwEQYDVQQDEwpr
@@ -83,7 +83,6 @@ tester GET upstreams '{"protocol": "http"}'
 json='{"name": "app2", "servers": [{"addr":"127.0.0.1:8088", "weight": 5}, {"addr":"127.0.0.1:8089", "weight": 5}], "protocol": "tcp"}'
 tester UPDATE upstreams/app2 "$json"
 tester GET upstreams '{"protocol": "tcp"}'
-
 # https类型的服务，证书会与服务同时保存和删除
 tester UPDATE servers/$name "$json_https"
 tester GET servers '{"protocol": "https"}'
@@ -91,28 +90,27 @@ tester DELETE servers/$name '{"protocol": "https"}'
 
 
 # http类型的服务，如果toHTTPS字段为true，将会把http://myapp.sycki.com所有请求重定向到https://myapp.sycki.com
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "http", "toHTTPS": true, "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app1"}'
 tester UPDATE servers/$name "$json"
 tester GET servers '{"protocol": "http"}'
 tester DELETE servers/$name '{"protocol": "http"}'
 
 
 # tcp类型的服务
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "tcp", "toHTTPS": true, "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
 tester UPDATE servers/$name "$json"
 tester GET servers '{"protocol": "tcp"}'
 tester DELETE servers/$name '{"protocol": "tcp"}'
 
 
 # udp类型的服务
-json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "toHTTPS": "true", "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
+json='{"name": "app1", "domain": "myapp.sycki.com", "port": 8085, "path": "/", "protocol": "udp", "toHTTPS": true, "cert": "thiscert", "key": "thiskey", "options": {}, "upstream": "app2"}'
 tester UPDATE servers/$name "$json"
 tester GET servers '{"protocol": "udp"}'
 tester DELETE servers/$name '{"protocol": "udp"}'
 
 
 tester DELETE upstreams/$name '{"protocol": "http"}'
-exit
 tester DELETE upstreams/app2 '{"protocol": "tcp"}'
 
 
