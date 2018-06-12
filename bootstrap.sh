@@ -14,7 +14,7 @@ elif [ "$1" == "version" ];then
     exec echo ${VERSION}
 else
     if [ "$VIPENABLE" == "true" ];then
-        vrrpd -i "${VIPIFNAME:-eth0}"  -v $(date +%S) ${VIP:-172.17.4.88} -I ${VIP:-172.17.4.88} -O ${VIPDST:-172.17.4.254}
+        vrrpd -i "${VIPIFNAME:-eth0}" -n  -v $(date +%S) ${VIP:-172.17.4.88} -I ${VIP:-172.17.4.88} -O ${VIPDST:-172.17.4.254}
     fi
     exec $OPENRESTY_HOME/nginx/sbin/nginx -g "daemon off;"
 fi
