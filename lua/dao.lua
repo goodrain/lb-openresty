@@ -127,8 +127,8 @@ _M.temp_tls_server =
 _M.temp_stream_server =
 [[server {
     listen %s so_keepalive=on;
-    proxy_connect_timeout 1s;
-    proxy_timeout 3s;
+    proxy_connect_timeout 20s;
+    proxy_timeout 5m;
     %s
     proxy_pass %s;
 }]]
