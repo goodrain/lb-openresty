@@ -108,7 +108,8 @@ _M.temp_tls_server =
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!MD5;
     %s
-    error_page 404 500 502 503 504 /waiting.html;
+    error_page 502 503 504 /waiting.html;
+    client_max_body_size 4096m;
     location = /waiting.html {
         root html;
     }
