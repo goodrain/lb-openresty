@@ -73,7 +73,8 @@ _M.temp_http_server =
     listen %s;
     server_name %s;
     %s
-    error_page 404 500 502 503 504 /waiting.html;
+    error_page 502 503 504 /waiting.html;
+    client_max_body_size 4096m;
     location = /waiting.html {
         root html;
     }
