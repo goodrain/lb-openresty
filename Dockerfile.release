@@ -1,8 +1,8 @@
 FROM goodrainapps/alpine:3.4
 
-ADD /openresty.tar.gz /usr/local/
+ADD /openresty-1.13.6.1.tar.gz /
 
-ENV VERSION=patch-01-dafa07a-2018-06-07-11
+ENV VERSION=master-c854d30-2018-10-12-17
 
 ENV OPENRESTY_HOME=/usr/local/openresty \
     HTTP_SUFFIX_URL=rainbond.goodrain.local

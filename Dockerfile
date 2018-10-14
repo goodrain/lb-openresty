@@ -1,6 +1,6 @@
 FROM goodrainapps/alpine:3.4
 
-ADD /openresty.tar.gz /usr/local/
+ADD /openresty-1.13.6.1.tar.gz /
 
 ENV VERSION=__RELEASE_DESC__
 
