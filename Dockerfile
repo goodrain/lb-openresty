@@ -14,7 +14,7 @@ COPY /lua $OPENRESTY_HOME/nginx/lua
 COPY /bootstrap.sh /bootstrap.sh
 
 COPY /bin /usr/local/bin
-
+COPY /html $OPENRESTY_HOME/nginx/html
 RUN chmod +x /usr/local/bin/vrrpd
 
 ENTRYPOINT ["/bootstrap.sh"]
